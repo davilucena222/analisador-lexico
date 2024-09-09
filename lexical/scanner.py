@@ -1,8 +1,6 @@
 from utils.token_type import TokenType
 from lexical.token import Token
 
-import re  
-
 class Scanner:
     def __init__(self, source):
         self.position = 0
@@ -16,9 +14,7 @@ class Scanner:
             "if": TokenType.IF,
             "else": TokenType.ELSE
         }
-        self.invalid_chars = {'@', '`', '¨', '~', '¨', '­', '´', '·', '¸' }
-        self.accented_char_pattern = re.compile(r'[áàâãéèêíïóôõöúüç]')
-        self.stack = []
+        self.invalid_chars = {'@', '`', '¨', '~', '¨', '­', '´', '·', '¸'}
 
     def read_source(self, source):
         with open(source, 'r') as file:
@@ -30,19 +26,12 @@ class Scanner:
         
         while True:
             if self.is_eof():
-                if self.stack:
-                    unclosed = ''.join(token[0] for token in self.stack)
-                    self.error(f"Tokens não fechados: {unclosed}", self.stack[-1][1], self.stack[-1][2])
                 if state != 0:
                     return self.finalize_token(state, content)
                 return None
 
             current_char = self.next_char()
-            
-            if self.accented_char_pattern.match(current_char):
-                if state not in [11, 12]: 
-                    self.error(f"Caractere inválido fora de string: {current_char}", self.row, self.column)
-            
+
             if current_char in self.invalid_chars:
                 self.error(f"Caractere inválido: {current_char}", self.row, self.column)
             
@@ -64,28 +53,10 @@ class Scanner:
                     content += current_char
                     state = 8
                 elif current_char == '(':
-                    self.stack.append(('(', self.row, self.column))
                     content += current_char
                     state = 10  
                 elif current_char == ')':
-                    if self.stack and self.stack[-1][0] == '(':
-                        self.stack.pop()
-                    else:
-                        self.error("Parêntese de fechamento não correspondente", self.row, self.column)
                     return Token(TokenType.PARENTHESIS, current_char)
-                elif current_char == '{':
-                    self.stack.append(('{', self.row, self.column))
-                    return Token(TokenType.LEFT_BRACE, current_char)
-                elif current_char == '}':
-                    if self.stack and self.stack[-1][0] == '{':
-                        self.stack.pop()
-                    else:
-                        self.error("Chave de fechamento não correspondente", self.row, self.column)
-                    return Token(TokenType.RIGHT_BRACE, current_char)
-                elif current_char == '"':
-                    state = 11
-                elif current_char == "'":
-                    state = 12
                 else:
                     self.error(f"Caractere inválido: {current_char}", self.row, self.column)
             elif state == 1:
@@ -141,20 +112,6 @@ class Scanner:
                 else:
                     self.back()
                     return Token(TokenType.PARENTHESIS, '(')
-            elif state == 11:  
-                if current_char == '"':
-                    return Token(TokenType.STRING, content)
-                elif self.is_eof():
-                    self.error(f"String não fechada: {content}", self.row, self.column)
-                else:
-                    content += current_char
-            elif state == 12:  
-                if current_char == "'":
-                    return Token(TokenType.STRING, content)
-                elif self.is_eof():
-                    self.error(f"String não fechada: {content}", self.row, self.column)
-                else:
-                    content += current_char
 
     def finalize_token(self, state, content):
         if state == 1:

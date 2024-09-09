@@ -10,6 +10,3 @@ class TokenType(Enum):
     PRINT = auto()
     IF = auto()
     ELSE = auto()
-    LEFT_BRACE = auto()
-    RIGHT_BRACE = auto()
-    STRING = auto() 
